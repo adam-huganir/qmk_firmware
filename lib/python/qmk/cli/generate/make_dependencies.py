@@ -34,8 +34,7 @@ def generate_make_dependencies(cli):
     keyboards_root = Path('keyboards')
     parent_path = Path('keyboards') / cli.args.keyboard
     while parent_path != keyboards_root:
-        for file in interesting_files:
-            check_files.append(parent_path / file)
+        check_files.extend(parent_path / file for file in interesting_files)
         parent_path = parent_path.parent
 
     # Find the keymap and include any of the interesting files
@@ -45,11 +44,9 @@ def generate_make_dependencies(cli):
             # keymap.json is only valid for the keymap, so check this one separately
             check_files.append(km.parent / 'keymap.json')
             # Add all the interesting files
-            for file in interesting_files:
-                check_files.append(km.parent / file)
-
+            check_files.extend(km.parent / file for file in interesting_files)
     # If we have a matching userspace, include those too
-    for file in interesting_files:
-        check_files.append(Path('users') / cli.args.keymap / file)
-
+    check_files.extend(
+        Path('users') / cli.args.keymap / file for file in interesting_files
+    )
     dump_lines(cli.args.output, [f'generated-files: $(wildcard {found})\n' for found in check_files])

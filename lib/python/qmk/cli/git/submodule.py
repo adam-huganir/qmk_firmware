@@ -41,7 +41,7 @@ def git_submodule(cli):
     if cli.config.git_submodule.force:
         # Also trash everything that isnt marked as "safe"
         for path in normpath('lib').iterdir():
-            if not any(ignore in path.as_posix() for ignore in IGNORE_DIRS):
+            if all(ignore not in path.as_posix() for ignore in IGNORE_DIRS):
                 remove_dirs.append(path)
 
     for folder in map(normpath, remove_dirs):

@@ -26,7 +26,7 @@ def _generate_layouts(keyboard, kb_info_json):
         if layout_data['c_macro']:
             continue
 
-        if not all('matrix' in key_data for key_data in layout_data['layout']):
+        if any('matrix' not in key_data for key_data in layout_data['layout']):
             cli.log.debug(f'{keyboard}/{layout_name}: No or incomplete matrix data!')
             continue
 
@@ -37,33 +37,36 @@ def _generate_layouts(keyboard, kb_info_json):
             row, col = key_data['matrix']
             identifier = f'k{ROW_LETTERS[row]}{COL_LETTERS[col]}'
 
-            if row >= row_num or col >= col_num:
+            if row >= row_num:
                 key_name = key_data.get('label', identifier)
-                if row >= row_num:
-                    cli.log.error(f'{keyboard}/{layout_name}: Matrix row for key {index} ({key_name}) is {row} but must be less than {row_num}')
+                cli.log.error(f'{keyboard}/{layout_name}: Matrix row for key {index} ({key_name}) is {row} but must be less than {row_num}')
 
                 if col >= col_num:
                     cli.log.error(f'{keyboard}/{layout_name}: Matrix column for key {index} ({key_name}) is {col} but must be less than {col_num}')
 
                 return []
 
+            elif col >= col_num:
+                key_name = key_data.get('label', identifier)
+                cli.log.error(f'{keyboard}/{layout_name}: Matrix column for key {index} ({key_name}) is {col} but must be less than {col_num}')
+
+                return []
+
             layout_matrix[row][col] = identifier
             layout_keys.append(identifier)
 
-        lines.append('')
-        lines.append(f'#define {layout_name}({", ".join(layout_keys)}) {{ \\')
-
-        rows = ', \\\n'.join(['\t {' + ', '.join(row) + '}' for row in layout_matrix])
-        rows += ' \\'
-        lines.append(rows)
-        lines.append('}')
-
+        lines.extend(('', f'#define {layout_name}({", ".join(layout_keys)}) {{ \\'))
+        rows = (
+            ', \\\n'.join(
+                ['\t {' + ', '.join(row) + '}' for row in layout_matrix]
+            )
+            + ' \\'
+        )
+        lines.extend((rows, '}'))
     for alias, target in kb_info_json.get('layout_aliases', {}).items():
-        lines.append('')
-        lines.append(f'#ifndef {alias}')
-        lines.append(f'#   define {alias} {target}')
-        lines.append('#endif')
-
+        lines.extend(
+            ('', f'#ifndef {alias}', f'#   define {alias} {target}', '#endif')
+        )
     return lines
 
 
@@ -73,9 +76,7 @@ def _generate_keycodes(kb_info_json):
     if 'keycodes' not in kb_info_json:
         return []
 
-    lines = []
-    lines.append('enum keyboard_keycodes {')
-
+    lines = ['enum keyboard_keycodes {']
     for index, item in enumerate(kb_info_json.get('keycodes')):
         key = item["key"]
         if index == 0:
@@ -87,9 +88,7 @@ def _generate_keycodes(kb_info_json):
 
     for item in kb_info_json.get('keycodes', []):
         key = item["key"]
-        for alias in item.get("aliases", []):
-            lines.append(f'#define {alias} {key}')
-
+        lines.extend(f'#define {alias} {key}' for alias in item.get("aliases", []))
     return lines
 
 
@@ -110,17 +109,21 @@ def generate_keyboard_h(cli):
     valid_config = dd_layouts or keyboard_h
 
     # Build the layouts.h file.
-    keyboard_h_lines = [GPL2_HEADER_C_LIKE, GENERATED_HEADER_C_LIKE, '#pragma once', '#include "quantum.h"']
+    keyboard_h_lines = [
+        GPL2_HEADER_C_LIKE,
+        GENERATED_HEADER_C_LIKE,
+        '#pragma once',
+        '#include "quantum.h"',
+        '',
+        '// Layout content',
+    ]
 
-    keyboard_h_lines.append('')
-    keyboard_h_lines.append('// Layout content')
     if dd_layouts:
         keyboard_h_lines.extend(dd_layouts)
     if keyboard_h:
         keyboard_h_lines.append(f'#include "{Path(keyboard_h).name}"')
 
-    keyboard_h_lines.append('')
-    keyboard_h_lines.append('// Keycode content')
+    keyboard_h_lines.extend(('', '// Keycode content'))
     if dd_keycodes:
         keyboard_h_lines.extend(dd_keycodes)
 

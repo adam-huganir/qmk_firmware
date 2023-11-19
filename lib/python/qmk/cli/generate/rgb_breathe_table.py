@@ -35,7 +35,7 @@ def _generate_table(lines, center, maximum):
     for s in range(0, 3):
         step = 1 << s
 
-        values_template += '#if RGBLIGHT_BREATHE_TABLE_SIZE == {}\n'.format(256 >> s)
+        values_template += f'#if RGBLIGHT_BREATHE_TABLE_SIZE == {256 >> s}\n'
 
         for pos in range(0, 256, step):
             values_template += '    ' if pos % 8 == 0 else ''

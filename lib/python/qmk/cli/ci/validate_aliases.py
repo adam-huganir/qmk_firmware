@@ -25,11 +25,7 @@ def _target_keyboard_exists(target):
         return False
 
     # If the target directory exists but it itself has an invalid alias or invalid rules.mk, then we can't build it either.
-    if not _safe_keyboard_folder(target):
-        return False
-
-    # As far as we can tell, we can build it!
-    return True
+    return bool(_safe_keyboard_folder(target))
 
 
 @cli.subcommand('Validates the list of keyboard aliases.', hidden=True)

@@ -22,10 +22,7 @@ class QMKJSONEncoder(json.JSONEncoder):
     def encode_decimal(self, obj):
         """Encode a decimal object.
         """
-        if obj == int(obj):  # I can't believe Decimal objects don't have .is_integer()
-            return int(obj)
-
-        return float(obj)
+        return int(obj) if obj == int(obj) else float(obj)
 
     def encode_dict(self, obj, path):
         """Encode a dict-like object.
@@ -34,7 +31,10 @@ class QMKJSONEncoder(json.JSONEncoder):
             self.indentation_level += 1
 
             items = sorted(obj.items(), key=self.sort_dict) if self.sort_keys else obj.items()
-            output = [self.indent_str + f"{json.dumps(key)}: {self.encode(value, path + [key])}" for key, value in items]
+            output = [
+                f"{self.indent_str}{json.dumps(key)}: {self.encode(value, path + [key])}"
+                for key, value in items
+            ]
 
             self.indentation_level -= 1
 
@@ -53,18 +53,23 @@ class QMKJSONEncoder(json.JSONEncoder):
         if self.primitives_only(obj):
             return "[" + ", ".join(self.encode(value, path + [index]) for index, value in enumerate(obj)) + "]"
 
-        else:
-            self.indentation_level += 1
+        self.indentation_level += 1
 
-            if path[-1] in ('layout', 'rotary'):
-                # These are part of a LED layout or encoder config, put them on a single line
-                output = [self.indent_str + self.encode_dict_single_line(value, path + [index]) for index, value in enumerate(obj)]
-            else:
-                output = [self.indent_str + self.encode(value, path + [index]) for index, value in enumerate(obj)]
+        output = (
+            [
+                self.indent_str
+                + self.encode_dict_single_line(value, path + [index])
+                for index, value in enumerate(obj)
+            ]
+            if path[-1] in ('layout', 'rotary')
+            else [
+                self.indent_str + self.encode(value, path + [index])
+                for index, value in enumerate(obj)
+            ]
+        )
+        self.indentation_level -= 1
 
-            self.indentation_level -= 1
-
-            return "[\n" + ",\n".join(output) + "\n" + self.indent_str + "]"
+        return "[\n" + ",\n".join(output) + "\n" + self.indent_str + "]"
 
     def encode(self, obj, path=[]):
         """Encode JSON objects for QMK.
@@ -150,7 +155,7 @@ class InfoJSONEncoder(QMKJSONEncoder):
                 return '99layouts'
 
             else:
-                return '50' + str(key)
+                return f'50{str(key)}'
 
         return key
 
@@ -169,14 +174,13 @@ class KeymapJSONEncoder(QMKJSONEncoder):
             for key in obj:
                 if key == 'JSON_NEWLINE':
                     layer.append([])
-                else:
-                    if isinstance(key, dict):
-                        # We have a macro
+                elif isinstance(key, dict):
+                    # We have a macro
 
-                        # TODO: Add proper support for nicely formatting keymap.json macros
-                        layer[-1].append(f'{self.encode(key)}')
-                    else:
-                        layer[-1].append(f'"{key}"')
+                    # TODO: Add proper support for nicely formatting keymap.json macros
+                    layer[-1].append(f'{self.encode(key)}')
+                else:
+                    layer[-1].append(f'"{key}"')
 
             layer = [f"{self.indent_str*indent_level}{', '.join(row)}" for row in layer]
 
@@ -214,6 +218,6 @@ class KeymapJSONEncoder(QMKJSONEncoder):
                 return '99documentation'
 
             else:
-                return '50' + str(key)
+                return f'50{str(key)}'
 
         return key

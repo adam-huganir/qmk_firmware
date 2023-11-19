@@ -68,9 +68,7 @@ all: {keyboard_safe}_{keymap_name}_binary
 
         cli.run([make_cmd, *get_make_parallel_args(parallel), '-f', makefile.as_posix(), 'all'], capture_output=False, stdin=DEVNULL)
 
-        # Check for failures
-        failures = [f for f in builddir.glob(f'failed.log.{os.getpid()}.*')]
-        if len(failures) > 0:
+        if failures := list(builddir.glob(f'failed.log.{os.getpid()}.*')):
             return False
 
 
@@ -90,7 +88,7 @@ all: {keyboard_safe}_{keymap_name}_binary
 )
 @cli.argument('-km', '--keymap', type=str, default='default', help="The keymap name to build. Default is 'default'.")
 @cli.argument('-e', '--env', arg_only=True, action='append', default=[], help="Set a variable to be passed to make. May be passed multiple times.")
-@cli.subcommand('Compile QMK Firmware for all keyboards.', hidden=False if cli.config.user.developer else True)
+@cli.subcommand('Compile QMK Firmware for all keyboards.', hidden=not cli.config.user.developer)
 def mass_compile(cli):
     """Compile QMK Firmware against all keyboards.
     """

@@ -133,7 +133,7 @@ def render_bytes(bytes, newline_after=16):
         if n % newline_after == 0 and n > 0 and n != len(bytes):
             lines = lines + "\n   "
         elif n == 0:
-            lines = lines + "   "
+            lines = f"{lines}   "
         lines = lines + " 0x{0:02X},".format(bytes[n])
     return lines.rstrip()
 
@@ -216,11 +216,10 @@ def convert_image_bytes(im, format):
     if image_format == 'IMAGE_FORMAT_GRAYSCALE':
         # Take the red channel
         image_bytes = im.tobytes("raw", "R")
-        image_bytes_len = len(image_bytes)
-
         # No palette
         palette = None
 
+        image_bytes_len = len(image_bytes)
         bytearray = []
         for x in range(expected_byte_count):
             byte = 0
@@ -236,12 +235,11 @@ def convert_image_bytes(im, format):
         image_bytes = im.tobytes("raw", "P")
         image_bytes_len = len(image_bytes)
 
-        # Export the palette
-        palette = []
         pal = im.getpalette()
-        for n in range(0, ncolors * 3, 3):
-            palette.append((pal[n + 0], pal[n + 1], pal[n + 2]))
-
+        palette = [
+            (pal[n + 0], pal[n + 1], pal[n + 2])
+            for n in range(0, ncolors * 3, 3)
+        ]
         bytearray = []
         for x in range(expected_byte_count):
             byte = 0
@@ -252,7 +250,7 @@ def convert_image_bytes(im, format):
                     byte = byte | ((image_bytes[byte_offset] & (ncolors - 1)) << int(n * shifter))
             bytearray.append(byte)
 
-    if image_format == 'IMAGE_FORMAT_RGB565':
+    elif image_format == 'IMAGE_FORMAT_RGB565':
         # Take the red, green, and blue channels
         red = im.tobytes("raw", "R")
         green = im.tobytes("raw", "G")
@@ -263,7 +261,7 @@ def convert_image_bytes(im, format):
 
         bytearray = [byte for r, g, b in zip(red, green, blue) for byte in rgb_to565(r, g, b)]
 
-    if image_format == 'IMAGE_FORMAT_RGB888':
+    elif image_format == 'IMAGE_FORMAT_RGB888':
         # Take the red, green, and blue channels
         red = im.tobytes("raw", "R")
         green = im.tobytes("raw", "G")
@@ -298,7 +296,7 @@ def compress_bytes_qmk_rle(bytearray):
         output.extend(r)
 
     for n in range(0, len(bytearray) + 1):
-        end = True if n == len(bytearray) else False
+        end = n == len(bytearray)
         if not end:
             c = bytearray[n]
             temp.append(c)
@@ -320,7 +318,7 @@ def compress_bytes_qmk_rle(bytearray):
             if len(temp) >= 2 and temp[-1] == temp[-2]:
                 repeat = True
                 if len(temp) > 2:
-                    append_range(temp[0:(len(temp) - 2)])
+                    append_range(temp[:len(temp) - 2])
                     temp = [temp[-1], temp[-1]]
                 continue
             if len(temp) == 128 or end:

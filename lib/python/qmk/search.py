@@ -88,13 +88,12 @@ def _expand_keymap_target(keyboard: str, keymap: str, all_keyboards: List[str] =
             cli.log.info(f'Retrieving list of keyboards with keymap "{keymap}"...')
             keyboard_filter = functools.partial(_keymap_exists, keymap=keymap)
             return [(kb, keymap) for kb in filter(lambda e: e is not None, parallel_map(keyboard_filter, all_keyboards))]
+    elif keymap == 'all':
+        keyboard = qmk.keyboard.resolve_keyboard(keyboard)
+        cli.log.info(f'Retrieving list of keymaps for keyboard "{keyboard}"...')
+        return _all_keymaps(keyboard)
     else:
-        if keymap == 'all':
-            keyboard = qmk.keyboard.resolve_keyboard(keyboard)
-            cli.log.info(f'Retrieving list of keymaps for keyboard "{keyboard}"...')
-            return _all_keymaps(keyboard)
-        else:
-            return [(qmk.keyboard.resolve_keyboard(keyboard), keymap)]
+        return [(qmk.keyboard.resolve_keyboard(keyboard), keymap)]
 
 
 def expand_keymap_targets(targets: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
@@ -112,7 +111,7 @@ def _filter_keymap_targets(target_list: List[Tuple[str, str]], filters: List[str
 
     Optionally includes the values of the queried info.json keys.
     """
-    if len(filters) == 0 and len(print_vals) == 0:
+    if not filters and not print_vals:
         targets = [(kb, km, {}) for kb, km in target_list]
     else:
         cli.log.info('Parsing data for all matching keyboard/keymap combinations...')

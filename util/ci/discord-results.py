@@ -18,7 +18,10 @@ qmk_dir = Path(__file__).resolve().parents[2].resolve()
 keyboard_re = re.compile(r'CI Metadata: KEYBOARD=(.*)$', re.MULTILINE)
 keymap_re = re.compile(r'CI Metadata: KEYMAP=(.*)$', re.MULTILINE)
 
-successful_builds = sum([len(list(qmk_dir.glob(f'*.{extension}'))) for extension in ['uf2', 'bin', 'hex']])
+successful_builds = sum(
+    len(list(qmk_dir.glob(f'*.{extension}')))
+    for extension in ['uf2', 'bin', 'hex']
+)
 failures = list(sorted([f.resolve() for f in (qmk_dir / '.build/').glob('failed.log.*')]))
 failed_builds = []
 for f in failures:
@@ -29,7 +32,7 @@ for f in failures:
         failed_builds.append(f'{kb}:{km}')
 
 webhook = DiscordWebhook(url=os.getenv('DISCORD_WEBHOOK'), username="QMK GitHub CI")
-if len(failed_builds) > 0:
+if failed_builds:
     failstr = ''
     for f in failed_builds:
         if len(failstr) >= 1800:

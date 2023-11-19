@@ -34,8 +34,11 @@ def parallelize():
 
             def _worker(func, *args):
                 # Ensure we don't unpack tuples -- mpire's `WorkerPool` tries to do so normally so we tell it not to.
-                for r in pool.imap_unordered(func, make_single_arguments(*args, generator=False), progress_bar=True):
-                    yield r
+                yield from pool.imap_unordered(
+                    func,
+                    make_single_arguments(*args, generator=False),
+                    progress_bar=True,
+                )
 
             yield _worker
         return

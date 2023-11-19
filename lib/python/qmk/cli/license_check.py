@@ -77,7 +77,7 @@ def _detect_license_from_file_contents(filename, absolute=False):
 @cli.argument('-s', '--short', action='store_true', help='Short output.')
 @cli.argument('-a', '--absolute', action='store_true', help='Print absolute paths.')
 @cli.argument('-e', '--extension', arg_only=True, action='append', default=[], help='Override list of extensions. Can be specified multiple times for multiple extensions.')
-@cli.subcommand('File license check.', hidden=False if cli.config.user.developer else True)
+@cli.subcommand('File license check.', hidden=not cli.config.user.developer)
 def license_check(cli):
     def _default_suffix_condition(s):
         return s in SUFFIXES

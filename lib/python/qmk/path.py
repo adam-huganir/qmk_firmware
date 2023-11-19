@@ -53,11 +53,13 @@ def keymaps(keyboard_name):
 
         keyboard_folder = keyboard_folder.parent
 
-    if len(found_dirs) > 0:
+    if found_dirs:
         return found_dirs
 
     logging.error('Could not find the keymaps directory!')
-    raise NoSuchKeyboardError('Could not find keymaps directory for: %s' % keyboard_name)
+    raise NoSuchKeyboardError(
+        f'Could not find keymaps directory for: {keyboard_name}'
+    )
 
 
 def keymap(keyboard_name, keymap_name):
@@ -82,10 +84,7 @@ def normpath(path):
     """
     path = Path(path)
 
-    if path.is_absolute():
-        return path
-
-    return Path(os.environ['ORIG_CWD']) / path
+    return path if path.is_absolute() else Path(os.environ['ORIG_CWD']) / path
 
 
 class FileType(argparse.FileType):
